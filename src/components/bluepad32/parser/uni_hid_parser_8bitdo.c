@@ -60,6 +60,12 @@ void uni_hid_parser_8bitdo_parse_usage(uni_hid_device_t* d,
                 case HID_USAGE_DPAD_LEFT:
                     uni_hid_parser_process_dpad(usage, value, &ctl->gamepad.dpad);
                     break;
+                case HID_USAGE_AXIS_RX:
+                    ctl->gamepad.brake = (value - 127) * AXIS_NORMALIZE_RANGE / ((255 - 127)+1);
+                    break;
+                case HID_USAGE_AXIS_RY:
+                    ctl->gamepad.throttle = (value - 127) * AXIS_NORMALIZE_RANGE / ((255 - 127)+1);
+                    break;
                 default:
                     logi("8BitDo: Unsupported page: 0x%04x, usage: 0x%04x, value=0x%x\n", usage_page, usage, value);
                     break;
@@ -82,11 +88,21 @@ void uni_hid_parser_8bitdo_parse_usage(uni_hid_device_t* d,
             switch (usage) {
                 case 0x01:  // Button A
                     if (value)
-                        ctl->gamepad.buttons |= BUTTON_B;
+                    {
+                        if (d->controller_subtype == CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX)
+                            ctl->gamepad.buttons |= BUTTON_A;
+                        else
+                            ctl->gamepad.buttons |= BUTTON_B;
+                    }
                     break;
                 case 0x02:  // Button B
                     if (value)
-                        ctl->gamepad.buttons |= BUTTON_A;
+                    {
+                        if (d->controller_subtype == CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX)
+                            ctl->gamepad.buttons |= BUTTON_B;
+                        else
+                            ctl->gamepad.buttons |= BUTTON_A;
+                    }
                     break;
                 case 0x03:
                     // Home Button for:
@@ -97,11 +113,21 @@ void uni_hid_parser_8bitdo_parse_usage(uni_hid_device_t* d,
                     break;
                 case 0x04:  // Button X
                     if (value)
-                        ctl->gamepad.buttons |= BUTTON_Y;
+                    {
+                        if (d->controller_subtype == CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX)
+                            ctl->gamepad.buttons |= BUTTON_X;
+                        else
+                            ctl->gamepad.buttons |= BUTTON_Y;
+                    }
                     break;
                 case 0x05:  // Button Y
                     if (value)
-                        ctl->gamepad.buttons |= BUTTON_X;
+                    {
+                        if (d->controller_subtype == CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX)
+                            ctl->gamepad.buttons |= BUTTON_Y;
+                        else
+                            ctl->gamepad.buttons |= BUTTON_X;
+                    }
                     break;
                 case 0x06:  // No used
                     if (value)
@@ -118,7 +144,12 @@ void uni_hid_parser_8bitdo_parse_usage(uni_hid_device_t* d,
                 case 0x09:
                     // SN30 Pro and gamepads with "trigger" buttons.
                     if (value)
-                        ctl->gamepad.buttons |= BUTTON_TRIGGER_L;
+                    {
+                        if (d->controller_subtype == CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX)
+                            ctl->gamepad.misc_buttons |= MISC_BUTTON_SELECT;
+                        else
+                            ctl->gamepad.buttons |= BUTTON_TRIGGER_L;
+                    }
                     break;
                 case 0x0a:
                     // SN30 Pro and gamepads with "trigger" buttons.

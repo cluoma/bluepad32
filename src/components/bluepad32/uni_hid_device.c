@@ -691,6 +691,10 @@ void uni_hid_device_guess_controller_type_from_pid_vid(uni_hid_device_t* d) {
         case CONTROLLER_TYPE_8BitdoController:
             d->report_parser.init_report = uni_hid_parser_8bitdo_init_report;
             d->report_parser.parse_usage = uni_hid_parser_8bitdo_parse_usage;
+            if (d->vendor_id == 0x2dc8 && d->product_id == 0x2100)
+            {
+                d->controller_subtype = CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX;
+            }
             logi("Device detected as 8BitDo: 0x%02x\n", type);
             break;
         case CONTROLLER_TYPE_GenericController:

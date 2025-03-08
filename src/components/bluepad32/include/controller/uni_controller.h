@@ -47,6 +47,8 @@ typedef enum {
     // E.g: NINA users might depend on some hardcoded values
     CONTROLLER_SUBTYPE_EXAMPLE_OF_NEW_GAMEPAD = 20,
 
+    CONTROLLER_SUBTYPE_8BITDO_SN30_XBOX,
+
 } uni_controller_subtype_t;
 
 enum {
