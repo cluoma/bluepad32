@@ -882,10 +882,32 @@ static void process_drm_kee(uni_hid_device_t* d, const uint8_t* report, uint16_t
     // using a few "shift right" operations.
     // But apparently Wii U Controller doesn't use the whole range of the 12-bits.
     // The max value seems to be 1280 instead of 2048.
-    lx = lx * 512 / 1280;
-    rx = rx * 512 / 1280;
-    ly = ly * 512 / 1280;
-    ry = ry * 512 / 1280;
+    if (ins->ext_type == WII_EXT_U_PRO_CONTROLLER) {
+        // Try to auto-calibrate WiiU Pro Controller axes
+        // This was based on testing with a single Wii U Pro controller.
+        // Not perfect but seems slightly better than assuming a max of 1280 all the time.
+        static int16_t lx_max = 1100; static int16_t lx_min = -1100;
+        static int16_t ly_max = 1100; static int16_t ly_min = -1100;
+        static int16_t rx_max = 1100; static int16_t rx_min = -1100;
+        static int16_t ry_max = 1100; static int16_t ry_min = -1100;
+        lx_max = lx > lx_max ? lx : lx_max; lx_min = lx < lx_min ? lx : lx_min;
+        ly_max = ly > ly_max ? ly : ly_max; ly_min = ly < ly_min ? ly : ly_min;
+        rx_max = rx > rx_max ? rx : rx_max; rx_min = rx < rx_min ? rx : rx_min;
+        ry_max = ry > ry_max ? ry : ry_max; ry_min = ry < ry_min ? ry : ry_min;
+        lx = (int16_t)( (((float)(lx - lx_min) * 1024.f / (float)(lx_max - lx_min)) - 512.f) / 0.95f);
+        rx = (int16_t)( (((float)(rx - rx_min) * 1024.f / (float)(rx_max - rx_min)) - 512.f) / 0.95f);
+        ly = (int16_t)( (((float)(ly - ly_min) * 1024.f / (float)(ly_max - ly_min)) - 512.f) / 0.95f);
+        ry = (int16_t)( (((float)(ry - ry_min) * 1024.f / (float)(ry_max - ry_min)) - 512.f) / 0.95f);
+        lx = (lx > 512) ? 512 : lx; lx = (lx < -512) ? -512 : lx;
+        rx = (rx > 512) ? 512 : rx; rx = (rx < -512) ? -512 : rx;
+        ly = (ly > 512) ? 512 : ly; ly = (ly < -512) ? -512 : ly;
+        ry = (ry > 512) ? 512 : ry; ry = (ry < -512) ? -512 : ry;
+    } else {
+        lx = lx * 512 / 1280;
+        rx = rx * 512 / 1280;
+        ly = ly * 512 / 1280;
+        ry = ry * 512 / 1280;
+    }
 
     // Y is inverted
     ctl->gamepad.axis_x = lx;
