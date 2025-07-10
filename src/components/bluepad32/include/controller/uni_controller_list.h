@@ -668,6 +668,7 @@ static const uni_controller_description_t arrControllers[] = {
         // - Generic controller in Android mode
 
         // Bluepad32 addons to here.
+        { MAKE_CONTROLLER_ID( 0x048f, 0x0002 ), k_eControllerType_DreamwaveController, NULL },	// Dreamwave Controller
 };
 
 // clang-format on

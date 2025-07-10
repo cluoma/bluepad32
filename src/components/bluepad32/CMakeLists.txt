@@ -34,6 +34,7 @@ set(srcs
          "parser/uni_hid_parser_switch.c"
          "parser/uni_hid_parser_wii.c"
          "parser/uni_hid_parser_xboxone.c"
+         "parser/p2m_hid_parser_dreamwave.c"
          "platform/uni_platform.c"
          "uni_circular_buffer.c"
          "uni_hid_device.c"

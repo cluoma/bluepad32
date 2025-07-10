@@ -34,6 +34,7 @@
 #include "parser/uni_hid_parser_switch.h"
 #include "parser/uni_hid_parser_wii.h"
 #include "parser/uni_hid_parser_xboxone.h"
+#include "parser/p2m_hid_parser_dreamwave.h"
 #include "platform/uni_platform.h"
 #include "uni_common.h"
 #include "uni_config.h"
@@ -749,6 +750,13 @@ void uni_hid_device_guess_controller_type_from_pid_vid(uni_hid_device_t* d) {
             d->report_parser.parse_usage = uni_hid_parser_keyboard_parse_usage;
             d->report_parser.device_dump = uni_hid_parser_keyboard_device_dump;
             logi("Device detected as Keyboard: 0x%02x\n", type);
+            break;
+        case CONTROLLER_TYPE_DreamwaveController:
+            d->report_parser.init_report = uni_hid_parser_dreamwave_init_report;
+            d->report_parser.setup = uni_hid_parser_dreamwave_setup;
+            d->report_parser.parse_input_report = uni_hid_parser_dreamwave_parse_input_report;
+            d->report_parser.device_dump = uni_hid_parser_dreamwave_device_dump;
+            logi("Device detected as Dreamwave Controller: 0x%02x\n", type);
             break;
         default:
             d->report_parser.init_report = uni_hid_parser_generic_init_report;
