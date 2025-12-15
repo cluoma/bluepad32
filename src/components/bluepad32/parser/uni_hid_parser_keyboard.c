@@ -279,7 +279,10 @@ void uni_hid_parser_keyboard_set_leds(struct uni_hid_device_s* d, uint8_t led_bi
         if (status != ERROR_CODE_SUCCESS)
             logi("Keyboard: Failed to send LED report, error=%#x\n", status);
     } else {
-        logi("Keyboard: Set LED report not implemented for BR/EDR yet\n");
+        // Assume that the LED output report is the interrupt report on ID 1
+        // TODO: actually check this is the case from the report descriptor
+        uint8_t led_out[3] = {0xA2, 0x01, led_bitmask};
+        uni_hid_device_send_intr_report(d, led_out, sizeof(led_out));
     }
 }
 
