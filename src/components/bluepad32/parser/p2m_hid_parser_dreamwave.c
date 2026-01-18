@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
-// Copyright 2019 Ricardo Quesada
-// 2021-2022 John "Nielk1" Klein
-// http://retro.moe/unijoysticle2
+// Copyright 2026 Colin Luoma
 
-// Technical info taken from:
-// https://aur.archlinux.org/cgit/aur.git/tree/hid-playstation.c?h=hid-playstation-dkms
-// https://gist.github.com/Nielk1/6d54cc2c00d2201ccb8c2720ad7538db
-// https://controllers.fandom.com/wiki/Sony_DualSense
 
 #include "parser/p2m_hid_parser_dreamwave.h"
 
@@ -19,11 +13,11 @@
 #include "uni_utils.h"
 
 typedef enum {
-    DS5_STATE_INITIAL,
-    DS5_STATE_PAIRING_INFO_REQUEST,
-    DS5_STATE_FIRMWARE_VERSION_REQUEST,
-    DS5_STATE_CALIBRATION_REQUEST,
-    DS5_STATE_READY,
+    DW_STATE_INITIAL,
+    DW_STATE_PAIRING_INFO_REQUEST,
+    DW_STATE_FIRMWARE_VERSION_REQUEST,
+    DW_STATE_CALIBRATION_REQUEST,
+    DW_STATE_READY,
 } dreamwave_state_t;
 
 typedef struct {
@@ -32,11 +26,9 @@ typedef struct {
     uint32_t hw_version;
     uint32_t fw_version;
     uint16_t update_version;
-
 } dreamwave_instance_t;
 _Static_assert(sizeof(dreamwave_instance_t) < HID_DEVICE_MAX_PARSER_DATA, "Dreamwave instance too big");
 
-/* Main DualSense input report excluding any BT/USB specific headers. */
 typedef struct __attribute((packed)) {
     uint8_t x, y;
     uint8_t rx, ry;
@@ -44,8 +36,6 @@ typedef struct __attribute((packed)) {
 } dreamwave_input_report_t;
 
 static dreamwave_instance_t* get_dreamwave_instance(uni_hid_device_t* d);
-// static void dreamwave_request_pairing_info_report(uni_hid_device_t* d);
-// static void dreamwave_request_firmware_version_report(uni_hid_device_t* d);
 
 void uni_hid_parser_dreamwave_init_report(uni_hid_device_t* d) {
     uni_controller_t* ctl = &d->controller;
@@ -69,20 +59,6 @@ void uni_hid_parser_dreamwave_parse_input_report(uni_hid_device_t* d, const uint
     //     printf("%02x ", report[i]);
     // }
     // printf("\r\n");
-
-    // // Don't process reports until state is ready. Prevents possible div-by-0 on calibration
-    // // and ignores other warnings.
-    // if (ins->state != DS5_STATE_READY)
-    //     return;
-
-    // if (report[0] != 0x31) {
-    //     loge("DS5: Unexpected report type: got 0x%02x, want: 0x31\n", report[0]);
-    //     return;
-    // }
-    // if (len != 78) {
-    //     loge("DS5: Unexpected report len: got %d, want: 78\n", len);
-    //     return;
-    // }
 
     uni_controller_t* ctl = &d->controller;
     const dreamwave_input_report_t* r = (dreamwave_input_report_t*)&report[1];
