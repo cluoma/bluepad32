@@ -31,6 +31,7 @@ set(srcs
          "parser/uni_hid_parser_smarttvremote.c"
          "parser/uni_hid_parser_stadia.c"
          "parser/uni_hid_parser_steam.c"
+         "parser/p2m_hid_parser_steamtriton.c"
          "parser/uni_hid_parser_switch.c"
          "parser/uni_hid_parser_wii.c"
          "parser/uni_hid_parser_xboxone.c"

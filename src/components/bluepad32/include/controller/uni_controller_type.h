@@ -39,6 +39,7 @@ typedef enum {
     k_eControllerType_SteamController = 2,
     k_eControllerType_SteamControllerV2 = 3,
     k_eControllerType_SteamControllerNeptune = 4,
+    k_eControllerType_SteamControllerTriton = 10,
 
     // Other Controllers
     k_eControllerType_UnknownNonSteamController = 30,
@@ -98,6 +99,7 @@ const char* uni_guess_controller_name(uint16_t vid, uint16_t pid);
 #define CONTROLLER_TYPE_SteamController k_eControllerType_SteamController
 #define CONTROLLER_TYPE_SteamControllerV2 k_eControllerType_SteamControllerV2
 #define CONTROLLER_TYPE_SteamControllerNeptune k_eControllerType_SteamControllerNeptune
+#define CONTROLLER_TYPE_SteamControllerTriton k_eControllerType_SteamControllerTriton
 #define CONTROLLER_TYPE_UnknownNonSteamController k_eControllerType_UnknownNonSteamController
 #define CONTROLLER_TYPE_XBox360Controller k_eControllerType_XBox360Controller
 #define CONTROLLER_TYPE_XBoxOneController k_eControllerType_XBoxOneController

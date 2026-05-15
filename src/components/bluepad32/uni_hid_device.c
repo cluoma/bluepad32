@@ -31,6 +31,7 @@
 #include "parser/uni_hid_parser_smarttvremote.h"
 #include "parser/uni_hid_parser_stadia.h"
 #include "parser/uni_hid_parser_steam.h"
+#include "parser/p2m_hid_parser_steamtriton.h"
 #include "parser/uni_hid_parser_switch.h"
 #include "parser/uni_hid_parser_wii.h"
 #include "parser/uni_hid_parser_xboxone.h"
@@ -728,6 +729,12 @@ void uni_hid_device_guess_controller_type_from_pid_vid(uni_hid_device_t* d) {
             d->report_parser.init_report = uni_hid_parser_steam_init_report;
             d->report_parser.parse_input_report = uni_hid_parser_steam_parse_input_report;
             logi("Device detected as Steam: 0x%02x\n", type);
+            break;
+        case CONTROLLER_TYPE_SteamControllerTriton:
+            d->report_parser.setup = uni_hid_parser_steamtriton_setup;
+            d->report_parser.init_report = uni_hid_parser_steamtriton_init_report;
+            d->report_parser.parse_input_report = uni_hid_parser_steamtriton_parse_input_report;
+            logi("Device detected as Steam Triton: 0x%02x\n", type);
             break;
         case CONTROLLER_TYPE_AtariJoystick:
             d->report_parser.setup = uni_hid_parser_atari_setup;

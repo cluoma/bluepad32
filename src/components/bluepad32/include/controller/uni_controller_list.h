@@ -612,6 +612,10 @@ static const uni_controller_description_t arrControllers[] = {
 	{ MAKE_CONTROLLER_ID( 0x28de, 0x1201 ), k_eControllerType_SteamControllerV2, NULL },	// Valve wired Steam Controller (HEADCRAB)
 	{ MAKE_CONTROLLER_ID( 0x28de, 0x1202 ), k_eControllerType_SteamControllerV2, NULL },	// Valve Bluetooth Steam Controller (HEADCRAB)
 	{ MAKE_CONTROLLER_ID( 0x28de, 0x1205 ), k_eControllerType_SteamControllerNeptune, NULL },	// Valve Steam Deck Builtin Controller
+	{ MAKE_CONTROLLER_ID( 0x28de, 0x1302 ), k_eControllerType_SteamControllerTriton, NULL },	// Valve Steam Triton Controller
+	{ MAKE_CONTROLLER_ID( 0x28de, 0x1303 ), k_eControllerType_SteamControllerTriton, NULL },	// Valve Steam Triton Controller (BLE)
+	{ MAKE_CONTROLLER_ID( 0x28de, 0x1304 ), k_eControllerType_SteamControllerTriton, NULL },	// Valve Steam Proteus Dongle (Proprietary)
+	{ MAKE_CONTROLLER_ID( 0x28de, 0x1305 ), k_eControllerType_SteamControllerTriton, NULL },	// Valve Steam Nereid Dongle (Proprietary)
 
         // Bluepad32 addons from here:
         // OUYA
@@ -668,7 +672,7 @@ static const uni_controller_description_t arrControllers[] = {
         // - Generic controller in Android mode
 
         // Bluepad32 addons to here.
-        { MAKE_CONTROLLER_ID( 0x048f, 0x0002 ), k_eControllerType_DreamwaveController, NULL },	// Dreamwave Controller
+		{ MAKE_CONTROLLER_ID( 0x048f, 0x0002 ), k_eControllerType_DreamwaveController, NULL },	// Dreamwave Controller
 };
 
 // clang-format on
