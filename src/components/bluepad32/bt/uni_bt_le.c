@@ -748,17 +748,29 @@ void uni_bt_le_on_hci_event_encryption_change(const uint8_t* packet, uint16_t si
 }
 
 int check_if_bonded(bd_addr_t addr) {
-    int count = le_device_db_count();
-    for (int i = 0; i < count; i++) {
-        bd_addr_t stored_addr;
-        int stored_type;
-        sm_key_t irk;
-        le_device_db_info(i, &stored_type, stored_addr, irk);
+    bd_addr_t entry_address;
+    int i;
+
+    if (!ble_enabled)
+        return -1;
+
+    //printf("Got addr: %s comparing to:\r\n", bd_addr_to_str(addr));
+
+    for (i = 0; i < le_device_db_max_count(); i++) {
+        int entry_address_type = (int)BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &entry_address_type, entry_address, NULL);
+
+        // skip unused entries
+        if (entry_address_type == (int)BD_ADDR_TYPE_UNKNOWN)
+            continue;
+
         // Compare identity address only
-        if (bd_addr_cmp(stored_addr, addr) == 0) {
+        //printf("%d %s\r\n", i, bd_addr_to_str(entry_address));
+        if (entry_address_type != BD_ADDR_TYPE_UNKNOWN && bd_addr_cmp(entry_address, addr) == 0) {
             return i;
         }
     }
+
     return -1;
 }
 
