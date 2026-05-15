@@ -895,7 +895,8 @@ void uni_bt_le_setup(void) {
     // - Xbox 2 buttons: flaky, fails to connect or connects
     // sm_set_authentication_requirements(0);
 
-    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
+    // sm_set_authentication_requirements(0);
 
     // Secure connection + NO bonding in ESP32:
     // - Stadia: Ok
