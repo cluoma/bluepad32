@@ -747,6 +747,21 @@ void uni_bt_le_on_hci_event_encryption_change(const uint8_t* packet, uint16_t si
     }
 }
 
+int check_if_bonded(bd_addr_t addr) {
+    int count = le_device_db_count();
+    for (int i = 0; i < count; i++) {
+        bd_addr_t stored_addr;
+        int stored_type;
+        sm_key_t irk;
+        le_device_db_info(i, &stored_type, stored_addr, irk);
+        // Compare identity address only
+        if (bd_addr_cmp(stored_addr, addr) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t size) {
     bd_addr_t addr;
     bd_addr_type_t addr_type;
@@ -768,12 +783,28 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
 
     adv_event_get_data(packet, &appearance, name);
 
-    if (appearance != UNI_BT_HID_APPEARANCE_GAMEPAD && appearance != UNI_BT_HID_APPEARANCE_JOYSTICK &&
-        appearance != UNI_BT_HID_APPEARANCE_MOUSE && appearance != UNI_BT_HID_APPEARANCE_KEYBOARD) {
-        // Don't log it. There too many devices advertising themselves.
-        if (appearance != 0 || strlen(name) != 0)
-            logd("Not a HID controller, appearance: %#x, name =%s\n", appearance, name);
-        return;
+    // check if we've bonded the device already
+    int le_device_db_index = check_if_bonded(addr);
+
+    // if not bonded, try to get some info from advertisement packet
+    if (le_device_db_index < 0)
+    {
+        if (appearance != UNI_BT_HID_APPEARANCE_GAMEPAD && appearance != UNI_BT_HID_APPEARANCE_JOYSTICK &&
+           appearance != UNI_BT_HID_APPEARANCE_MOUSE && appearance != UNI_BT_HID_APPEARANCE_KEYBOARD) {
+            // Don't log it. There too many devices advertising themselves.
+            if (appearance != 0 || strlen(name) != 0)
+            {
+                logd("Not a HID controller, appearance: %#x, name =%s, bdaddr: %s\n", appearance, name, bd_addr_to_str(addr));
+            }
+            return;
+           }
+    }
+
+    // some device advertisement packets for reconnects have no appearance, so we just assume it's a gamepad
+    // TODO: improve this logic maybe
+    if (appearance == 0 && le_device_db_index >= 0) {
+        logd("Known device %s has no appearance value, assuming gamepad\n", bd_addr_to_str(addr));
+        appearance = UNI_BT_HID_APPEARANCE_GAMEPAD;
     }
 
     switch (appearance) {
