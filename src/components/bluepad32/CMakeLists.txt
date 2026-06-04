@@ -171,9 +171,16 @@ if(IDF_TARGET)
     # ESP-IDF
     # Nothing
 elseif(PICO_SDK_VERSION_STRING)
+    if(USE_CYW43_ARCH_POLL)
+        # Disable LWIP to use cyw43_arch_poll
+        target_compile_definitions(bluepad32 PRIVATE CYW43_LWIP=0)
+        set(CYW43_ARCH pico_cyw43_arch_poll)
+    else()
+        set(CYW43_ARCH pico_cyw43_arch_none)
+    endif()
     target_link_libraries(bluepad32
             pico_stdlib
-            pico_cyw43_arch_none
+            ${CYW43_ARCH}
             pico_btstack_ble
             pico_btstack_classic
             pico_btstack_cyw43
