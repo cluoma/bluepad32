@@ -54,7 +54,7 @@ typedef struct {
     uint8_t prev_rumble_weak_magnitude;
     uint8_t prev_rumble_strong_magnitude;
 } steamtriton_instance_t;
-_Static_assert(sizeof(steamtriton_instance_t) < HID_DEVICE_MAX_PARSER_DATA, "DS4 instance too big");
+_Static_assert(sizeof(steamtriton_instance_t) < HID_DEVICE_MAX_PARSER_DATA, "SteamTriton instance too big");
 
 typedef struct __attribute__ ((packed)) {
 
