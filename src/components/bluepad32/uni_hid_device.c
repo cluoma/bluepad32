@@ -734,6 +734,7 @@ void uni_hid_device_guess_controller_type_from_pid_vid(uni_hid_device_t* d) {
             d->report_parser.setup = uni_hid_parser_steamtriton_setup;
             d->report_parser.init_report = uni_hid_parser_steamtriton_init_report;
             d->report_parser.parse_input_report = uni_hid_parser_steamtriton_parse_input_report;
+            d->report_parser.play_dual_rumble = uni_hid_parser_steamtriton_play_dual_rumble;
             logi("Device detected as Steam Triton: 0x%02x\n", type);
             break;
         case CONTROLLER_TYPE_AtariJoystick:
