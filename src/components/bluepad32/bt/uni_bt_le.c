@@ -208,17 +208,13 @@ static void adv_event_get_data(const uint8_t* packet, uint16_t* appearance, char
 }
 
 static void parse_report(const uint8_t* packet, uint16_t size) {
-    uint16_t service_index;
     uint16_t hids_cid;
     uni_hid_device_t* device;
-    const uint8_t* descriptor_data;
-    uint16_t descriptor_len;
     const uint8_t* report_data;
     uint16_t report_len;
 
     ARG_UNUSED(size);
 
-    service_index = gattservice_subevent_hid_report_get_service_index(packet);
     hids_cid = gattservice_subevent_hid_report_get_hids_cid(packet);
     device = uni_hid_device_get_instance_for_hids_cid(hids_cid);
 
@@ -227,15 +223,6 @@ static void parse_report(const uint8_t* packet, uint16_t size) {
         return;
     }
 
-    // FIXME: Copying the HID descriptor should be done at setup time since some device, like Xbox requires it
-    // to set the correct parser.
-    // But not clear how to get the "service_index" from setup
-    if (device->hid_descriptor_len == 0) {
-        descriptor_data = hids_client_descriptor_storage_get_descriptor_data(hids_cid, service_index);
-        descriptor_len = hids_client_descriptor_storage_get_descriptor_len(hids_cid, service_index);
-
-        uni_hid_device_set_hid_descriptor(device, descriptor_data, descriptor_len);
-    }
     report_data = gattservice_subevent_hid_report_get_report(packet);
     report_len = gattservice_subevent_hid_report_get_report_len(packet);
 
@@ -275,12 +262,21 @@ static void uni_hids_client_packet_handler(uint8_t packet_type, uint16_t channel
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     protocol_mode = gattservice_subevent_hid_service_connected_get_protocol_mode(packet);
-                    logi("HID service client connected, found %d services, protocol_mode=%d\n",
-                         gattservice_subevent_hid_service_connected_get_num_instances(packet), protocol_mode);
+                    uint8_t services = gattservice_subevent_hid_service_connected_get_num_instances(packet);
+                    logi("HID service client connected, found %d services, protocol_mode=%d\n", services, protocol_mode);
 
                     // XXX TODO: store device as bonded
                     hids_cid = gattservice_subevent_hid_service_connected_get_hids_cid(packet);
                     device = uni_hid_device_get_instance_for_hids_cid(hids_cid);
+
+                    // Take the first instance for our HID descriptor
+                    if (services > 0 && device->hid_descriptor_len == 0) {
+                        const uint8_t * descriptor_data = hids_client_descriptor_storage_get_descriptor_data(hids_cid, 0);
+                        uint8_t descriptor_len = hids_client_descriptor_storage_get_descriptor_len(hids_cid, 0);
+
+                        uni_hid_device_set_hid_descriptor(device, descriptor_data, descriptor_len);
+                    }
+
                     if (!device) {
                         loge("Hids Cid: Could not find valid device for hids_cid=%d\n", hids_cid);
                         break;
