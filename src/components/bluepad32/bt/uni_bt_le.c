@@ -705,6 +705,15 @@ void uni_bt_le_on_hci_event_le_meta(const uint8_t* packet, uint16_t size) {
 
         case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
             // Safely ignore it, we handle the GAP advertising report instead
+            // logd("--> HCI_SUBEVENT_LE_ADVERTISING_REPORT\n");
+            break;
+
+        case HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM:
+            logd("--> HCI_SUBEVENT_LE_CHANNEL_SELECTION_ALGORITHM\n");
+            break;
+
+        case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+            logd("--> HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE\n");
             break;
 
         default:
