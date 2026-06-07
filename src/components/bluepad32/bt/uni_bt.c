@@ -466,6 +466,9 @@ void uni_bt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packe
                         uni_bt_bredr_on_hci_remote_name_request_complete(channel, packet, size);
                     break;
                 // L2CAP EVENTS
+                case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST:
+                    logi("--> L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST\n");
+                    break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     logd("--> L2CAP_EVENT_CAN_SEND_NOW\n");
                     uint16_t local_cid = l2cap_event_can_send_now_get_local_cid(packet);
