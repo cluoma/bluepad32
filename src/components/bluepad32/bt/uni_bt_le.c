@@ -809,8 +809,7 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
         if (appearance != UNI_BT_HID_APPEARANCE_GAMEPAD && appearance != UNI_BT_HID_APPEARANCE_JOYSTICK &&
            appearance != UNI_BT_HID_APPEARANCE_MOUSE && appearance != UNI_BT_HID_APPEARANCE_KEYBOARD) {
             // Don't log it. There too many devices advertising themselves.
-            if (appearance != 0 || strlen(name) != 0)
-            {
+            if (appearance != 0 || strlen(name) != 0) {
                 logd("Not a HID controller, appearance: %#x, name =%s, bdaddr: %s\n", appearance, name, bd_addr_to_str(addr));
             }
             return;
