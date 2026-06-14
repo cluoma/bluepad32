@@ -272,7 +272,14 @@ static void uni_hids_client_packet_handler(uint8_t packet_type, uint16_t channel
                     // Take the first instance for our HID descriptor
                     if (services > 0 && device->hid_descriptor_len == 0) {
                         const uint8_t * descriptor_data = hids_client_descriptor_storage_get_descriptor_data(hids_cid, 0);
-                        uint8_t descriptor_len = hids_client_descriptor_storage_get_descriptor_len(hids_cid, 0);
+                        uint16_t descriptor_len = hids_client_descriptor_storage_get_descriptor_len(hids_cid, 0);
+
+                        // printf("Desc len: %u\r\n", descriptor_len);
+                        // for (uint16_t i = 0; i < descriptor_len; i++)
+                        // {
+                        //     printf("%02x ", descriptor_data[i]);
+                        // }
+                        // printf("\r\n");
 
                         uni_hid_device_set_hid_descriptor(device, descriptor_data, descriptor_len);
                     }
@@ -302,7 +309,7 @@ static void uni_hids_client_packet_handler(uint8_t packet_type, uint16_t channel
             break;
 
         case GATTSERVICE_SUBEVENT_HID_REPORT:
-            logd("GATTSERVICE_SUBEVENT_HID_REPORT\n");
+            //logd("GATTSERVICE_SUBEVENT_HID_REPORT\n");
             parse_report(packet, size);
             break;
         case GATTSERVICE_SUBEVENT_HID_INFORMATION:
