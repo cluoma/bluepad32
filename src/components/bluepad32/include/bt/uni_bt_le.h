@@ -21,6 +21,7 @@ extern "C" {
 void uni_bt_le_on_hci_event_le_meta(const uint8_t* packet, uint16_t size);
 void uni_bt_le_on_hci_event_encryption_change(const uint8_t* packet, uint16_t size);
 void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t size);
+void uni_bt_le_on_gap_event_bonding_deleted(const uint8_t* packet, uint16_t size);
 void uni_bt_le_on_hci_disconnection_complete(uint16_t channel, const uint8_t* packet, uint16_t size);
 
 void uni_bt_le_scan_start(void);

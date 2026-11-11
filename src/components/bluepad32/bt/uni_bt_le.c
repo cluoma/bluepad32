@@ -58,6 +58,7 @@
 #include <bluetooth_data_types.h>
 #include <btstack.h>
 #include <btstack_config.h>
+#include <btstack_tlv.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -123,6 +124,113 @@ static void hog_disconnect(hci_con_handle_t con_handle) {
         gap_disconnect(con_handle);
 
     resume_scanning_hint();
+}
+
+/*
+ * Persisted COD for bonded devices.
+ *
+ * Some devices don't include the "appearance" in the advertisements they use for re-connections, so the
+ * device type cannot be deduced from it. To solve it, the COD derived from the appearance is stored next
+ * to the bond, in the same TLV used by BTstack for the LE Device DB.
+ *
+ * The tag is derived from the LE Device DB index, so:
+ *  - there are at most NVM_NUM_DEVICE_DB_ENTRIES entries.
+ *  - when BTstack re-uses an index for another device (e.g.: evicts the oldest bond), the entry gets
+ *    overwritten when the new device completes the pairing.
+ *  - when the bond is deleted, the entry is deleted from uni_bt_le_on_gap_event_bonding_deleted().
+ *
+ * The address of the bond is stored in the entry, and it is used to detect stale entries.
+ *
+ * Entry format: bd_addr (6 bytes) + COD (4 bytes, little endian)
+ */
+#define BONDED_COD_ENTRY_LEN (BD_ADDR_LEN + 4)
+
+// Whether the COD of the device is just a guess, and not based on real data like the appearance.
+// Indexed by device index.
+static bool cod_is_guessed[CONFIG_BLUEPAD32_MAX_DEVICES];
+
+static uint32_t bonded_cod_tag_for_index(int le_device_db_index) {
+    // Doesn't clash with: "BTD" (LE Device DB), "BTL" (link keys), "BP3" (Bluepad32 properties)
+    return ((uint32_t)'B' << 24) | ((uint32_t)'P' << 16) | ((uint32_t)'C' << 8) | (uint8_t)le_device_db_index;
+}
+
+// Returns 0 if there is no valid COD stored for the bond.
+static uint32_t bonded_cod_load(int le_device_db_index, const bd_addr_t addr) {
+    const btstack_tlv_t* tlv_impl = NULL;
+    void* tlv_context = NULL;
+    uint8_t entry[BONDED_COD_ENTRY_LEN];
+
+    if (le_device_db_index < 0)
+        return 0;
+
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl)
+        return 0;
+
+    if (tlv_impl->get_tag(tlv_context, bonded_cod_tag_for_index(le_device_db_index), entry, sizeof(entry)) !=
+        sizeof(entry))
+        return 0;
+
+    // Stale entry: belongs to a bond that was previously stored at this index.
+    if (memcmp(entry, addr, BD_ADDR_LEN) != 0)
+        return 0;
+
+    return little_endian_read_32(entry, BD_ADDR_LEN);
+}
+
+static void bonded_cod_store(int le_device_db_index, uint32_t cod) {
+    const btstack_tlv_t* tlv_impl = NULL;
+    void* tlv_context = NULL;
+    int entry_address_type = (int)BD_ADDR_TYPE_UNKNOWN;
+    bd_addr_t entry_address;
+    uint8_t entry[BONDED_COD_ENTRY_LEN];
+
+    if (le_device_db_index < 0 || cod == 0)
+        return;
+
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl)
+        return;
+
+    // Use the address stored in the bond (the identity address), since it is the one used to
+    // find the bond when the advertisement is received.
+    le_device_db_info(le_device_db_index, &entry_address_type, entry_address, NULL);
+    if (entry_address_type == (int)BD_ADDR_TYPE_UNKNOWN)
+        return;
+
+    memcpy(entry, entry_address, BD_ADDR_LEN);
+    little_endian_store_32(entry, BD_ADDR_LEN, cod);
+    if (tlv_impl->store_tag(tlv_context, bonded_cod_tag_for_index(le_device_db_index), entry, sizeof(entry)) != 0) {
+        loge("Failed to store COD for bonded device %s\n", bd_addr_to_str(entry_address));
+        return;
+    }
+    logi("Stored COD %#x for bonded device %s, index=%d\n", (unsigned int)cod, bd_addr_to_str(entry_address),
+         le_device_db_index);
+}
+
+static void bonded_cod_delete(int le_device_db_index) {
+    const btstack_tlv_t* tlv_impl = NULL;
+    void* tlv_context = NULL;
+
+    if (le_device_db_index < 0)
+        return;
+
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl)
+        return;
+
+    tlv_impl->delete_tag(tlv_context, bonded_cod_tag_for_index(le_device_db_index));
+}
+
+// Stores the COD of the device next to its bond, unless the COD is just a guess.
+static void bonded_cod_store_for_device(const uni_hid_device_t* d, hci_con_handle_t con_handle) {
+    int idx = uni_hid_device_get_idx_for_instance(d);
+
+    if (idx < 0 || cod_is_guessed[idx])
+        return;
+
+    // Returns -1 if the device is not bonded.
+    bonded_cod_store(sm_le_device_index(con_handle), d->cod);
 }
 
 static void get_advertisement_data(const uint8_t* adv_data, uint8_t adv_size, uint16_t* appearance, char* name) {
@@ -400,7 +508,13 @@ static void uni_device_information_packet_handler(uint8_t packet_type,
                         break;
                     }
 
-                    // Continue - query primary services.
+                    // // Continue - query primary services.
+                    // if (device->cod == 0) {
+                    //     logi("Appearance/COD unknown, querying GATT\n");
+                    //     gatt_client_read_value_of_characteristics_by_uuid16(uni_gatt_client_packet_handler, con_handle,
+                    //                                                        0x0001, 0xffff, GAP_APPEARANCE_UUID);
+                    // }
+
                     logi("Search for HID service, con_handle: %#x\n", con_handle);
                     status = hids_host_connect(con_handle, uni_hids_client_packet_handler, HID_PROTOCOL_MODE_REPORT,
                                                  &hids_cid);
@@ -645,6 +759,9 @@ static void uni_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     logi("Pairing complete, success\n");
+                    // The bond was already stored by BTstack. Store the COD next to it, since the
+                    // advertisements used for re-connections might not include the appearance.
+                    bonded_cod_store_for_device(device, con_handle);
                     request_device_information_query = true;
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
@@ -797,6 +914,8 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
     uint16_t cod;
     uint8_t rssi;
     char name[64];
+    bool cod_guessed = false;
+    int device_idx;
 
     appearance = 0;
     name[0] = 0;
@@ -827,13 +946,6 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
            }
     }
 
-    // some device advertisement packets for reconnects have no appearance, so we just assume it's a gamepad
-    // TODO: improve this logic maybe
-    if (appearance == 0 && le_device_db_index >= 0) {
-        logd("Known device %s has no appearance value, assuming gamepad\n", bd_addr_to_str(addr));
-        appearance = UNI_BT_HID_APPEARANCE_GAMEPAD;
-    }
-
     switch (appearance) {
         case UNI_BT_HID_APPEARANCE_MOUSE:
             cod = UNI_BT_COD_MAJOR_PERIPHERAL | UNI_BT_COD_MINOR_MICE;
@@ -852,6 +964,20 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
             break;
     }
 
+    // Some devices don't include the appearance in the advertisements used for re-connections.
+    // Use the COD that was stored when the device was paired.
+    if (cod == 0 && le_device_db_index >= 0) {
+        cod = (uint16_t)bonded_cod_load(le_device_db_index, addr);
+        if (cod != 0) {
+            logi("Known device %s has no HID appearance, using stored COD\n", bd_addr_to_str(addr));
+        } else {
+            // Bond created before the COD was persisted.
+            logi("Known device %s has no HID appearance nor stored COD, assuming gamepad\n", bd_addr_to_str(addr));
+            cod = UNI_BT_COD_MAJOR_PERIPHERAL | UNI_BT_COD_MINOR_GAMEPAD;
+            cod_guessed = true;
+        }
+    }
+
     addr_type = gap_event_advertising_report_get_address_type(packet);
     rssi = gap_event_advertising_report_get_rssi(packet);
 
@@ -860,7 +986,10 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
     logi(", rssi %u dBm", rssi);
     logi(", name '%s'\n", name);
 
-    if (uni_hid_device_on_device_discovered(addr, name, cod, rssi) != UNI_ERROR_SUCCESS)
+
+    // Only verify cod for unknown devices. Known devices were already verified when they were paired.
+    if (le_device_db_index < 0 &&
+        uni_hid_device_on_device_discovered(addr, name, cod, rssi) != UNI_ERROR_SUCCESS)
         return;
 
     uni_hid_device_t* d = uni_hid_device_create(addr);
@@ -868,6 +997,11 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
         loge("Error: no more available device slots\n");
         return;
     }
+
+    // A guessed COD must not be persisted.
+    device_idx = uni_hid_device_get_idx_for_instance(d);
+    if (device_idx >= 0)
+        cod_is_guessed[device_idx] = cod_guessed;
 
     // FIXME: Using CODs to make it compatible with legacy BR/EDR code.
     uni_hid_device_set_cod(d, cod);
@@ -877,6 +1011,18 @@ void uni_bt_le_on_gap_event_advertising_report(const uint8_t* packet, uint16_t s
     d->conn.rssi = rssi;
 
     hog_connect(addr, addr_type);
+}
+
+void uni_bt_le_on_gap_event_bonding_deleted(const uint8_t* packet, uint16_t size) {
+    int le_device_db_index;
+
+    ARG_UNUSED(size);
+
+    // Triggered when the bond is deleted, and also when a bonded device is paired again.
+    // In the latter case, the COD is stored again once the pairing completes.
+    le_device_db_index = gap_subevent_bonding_deleted_get_index(packet);
+    logi("Bond deleted, removing stored COD for index=%d\n", le_device_db_index);
+    bonded_cod_delete(le_device_db_index);
 }
 
 void uni_bt_le_on_hci_disconnection_complete(uint16_t channel, const uint8_t* packet, uint16_t size) {
