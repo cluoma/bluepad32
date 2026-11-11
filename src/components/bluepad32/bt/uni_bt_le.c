@@ -698,20 +698,20 @@ void uni_bt_le_on_hci_event_le_meta(const uint8_t* packet, uint16_t size) {
 
     switch (subevent) {
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
-            device = uni_hid_device_get_instance_for_address(event_addr);
-            if (!device) {
-                loge("uni_bt_le_on_connection_complete: Device not found for addr: %s\n", bd_addr_to_str(event_addr));
-                break;
-            }
-            con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-            logi("Using con_handle: %#x\n", con_handle);
-
-            uni_hid_device_set_connection_handle(device, con_handle);
-            sm_request_pairing(con_handle);
-
-            // Resume scanning
-            // gap_start_scan();
+            // hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
+            // device = uni_hid_device_get_instance_for_address(event_addr);
+            // if (!device) {
+            //     loge("uni_bt_le_on_connection_complete: Device not found for addr: %s\n", bd_addr_to_str(event_addr));
+            //     break;
+            // }
+            // con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            // logi("Using con_handle: %#x\n", con_handle);
+            //
+            // uni_hid_device_set_connection_handle(device, con_handle);
+            // sm_request_pairing(con_handle);
+            //
+            // // Resume scanning
+            // // gap_start_scan();
             break;
 
         case HCI_SUBEVENT_LE_ADVERTISING_REPORT:

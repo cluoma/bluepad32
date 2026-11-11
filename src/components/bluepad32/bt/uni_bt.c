@@ -334,6 +334,9 @@ void uni_bt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packe
     uint8_t status;
     uint16_t handle;
 
+    hci_con_handle_t con_handle;
+    bd_addr_t event_addr;
+
     if (!uni_bt_setup_is_ready()) {
         uni_bt_setup_packet_handler(packet_type, channel, packet, size);
         return;
@@ -344,6 +347,27 @@ void uni_bt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packe
             event = hci_event_packet_get_type(packet);
             switch (event) {
                 // HCI EVENTS
+                case HCI_EVENT_META_GAP:
+                    // wait for connection complete
+                    if (IS_ENABLED(UNI_ENABLE_BLE))
+                    {
+                        if (hci_event_gap_meta_get_subevent_code(packet) == GAP_SUBEVENT_BONDING_DELETED) {
+                            uni_bt_le_on_gap_event_bonding_deleted(packet, size);
+                            break;
+                        }
+                        if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                        hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
+                        device = uni_hid_device_get_instance_for_address(event_addr);
+                        if (!device) {
+                            loge("uni_bt_le_on_connection_complete: Device not found for addr: %s\n", bd_addr_to_str(event_addr));
+                            break;
+                        }
+                        con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                        logi("Using con_handle: %#x\n", con_handle);
+                        uni_hid_device_set_connection_handle(device, con_handle);
+                        sm_request_pairing(con_handle);
+                    }
+                    break;
                 case HCI_EVENT_LE_META:
                     if (IS_ENABLED(UNI_ENABLE_BLE))
                         uni_bt_le_on_hci_event_le_meta(packet, size);
