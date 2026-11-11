@@ -81,6 +81,10 @@ static bool ble_enabled;
 static uint8_t hid_descriptor_storage[HID_MAX_DESCRIPTOR_LEN * CONFIG_BLUEPAD32_MAX_DEVICES];
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
+// Empty GATT DB: version byte + end-of-database marker. Enough for BTstack's
+// ATT server to answer peer-initiated requests instead of dropping them.
+static const uint8_t minimal_att_db[] = {ATT_DB_VERSION, 0x00, 0x00};
+
 /**
  * Connect to remote device but set timer for timeout
  */
@@ -971,6 +975,7 @@ void uni_bt_le_setup(void) {
     // libusb works with mostly any configuration
 
     gatt_client_init();
+    att_server_init(minimal_att_db, NULL, NULL);
     hids_host_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
     // FIXME: this is an empty function and PicoW toolchain is removing empty function (?)
     // scan_parameters_service_client_init();
